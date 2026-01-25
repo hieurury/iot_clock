@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+body {
+	font-family: 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+	background: #232946;
+	color: #232946;
+	min-height: 100vh;
+}
+
+.glass {
+	background: #f4f4f7;
+	border: 1px solid #bfcad6;
+	box-shadow: 0 2px 12px 0 #bfcad633;
+	border-radius: 12px;
+	backdrop-filter: blur(2px);
+}
