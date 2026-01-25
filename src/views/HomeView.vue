@@ -40,7 +40,7 @@ const glassCardClass = "bg-white/5 backdrop-blur-xl border border-white/10 round
     <div>
         <div class="fixed inset-0 bg-slate-900 -z-10"></div>
 
-        <div class="w-full max-w-lg mx-auto py-6 px-4 min-h-[85vh] flex flex-col">
+        <div class="w-full mx-auto py-6 px-4 min-h-[85vh] flex flex-col">
             
             <div class="flex justify-between items-end mb-6">
                 <div>
