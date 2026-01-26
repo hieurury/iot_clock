@@ -1,17 +1,31 @@
 <script setup lang="ts">
 import TimeUpAlert from '../components/TimeUpAlert.vue';
+import BaseSwitch from '../components/BaseSwitch.vue';
+import { useCountdownStore } from '../stores/countdown';
 import { useRoute } from 'vue-router';
 import { CloudIcon, ClockIcon, BellAlertIcon } from '@heroicons/vue/24/outline';
 
 // Dùng route để check active class cho menu
 const route = useRoute();
+const store = useCountdownStore();
 
 // Hàm kiểm tra active để code gọn hơn
 const isActive = (path: string) => route.path === path;
+
+const handleSwitch = async (val: boolean) => {
+  if (!val && store.buzzerStatus === 1) {
+    await store.turnOffBuzzer();
+  }
+};
 </script>
 <template>
     <div class="min-h-screen font-sans text-slate-200 relative overflow-hidden">
         <TimeUpAlert />
+        <!-- Nút tắt còi dạng switch nổi góc trên phải -->
+        <div class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl shadow-lg border border-slate-700">
+            <span class="text-xs font-bold text-slate-300 select-none">Tắt còi</span>
+            <BaseSwitch :model-value="store.buzzerStatus === 1" @update:model-value="handleSwitch" />
+        </div>
         <div class="fixed inset-0 bg-linear-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
         <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
             <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
