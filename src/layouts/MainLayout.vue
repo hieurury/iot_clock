@@ -12,10 +12,15 @@ const store = useCountdownStore();
 // Hàm kiểm tra active để code gọn hơn
 const isActive = (path: string) => route.path === path;
 
+import { setBuzzerStatus } from '../services/api';
 const handleSwitch = async (val: boolean) => {
-  if (!val && store.buzzerStatus === 1) {
-    await store.turnOffBuzzer();
-  }
+    if (val && store.buzzerStatus !== 1) {
+        // Bật còi thủ công
+        await setBuzzerStatus(1);
+        store.buzzerStatus = 1;
+    } else if (!val && store.buzzerStatus === 1) {
+        await store.turnOffBuzzer();
+    }
 };
 </script>
 <template>
@@ -23,7 +28,7 @@ const handleSwitch = async (val: boolean) => {
         <TimeUpAlert />
         <!-- Nút tắt còi dạng switch nổi góc trên phải -->
         <div class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl shadow-lg border border-slate-700">
-            <span class="text-xs font-bold text-slate-300 select-none">Tắt còi</span>
+            <span class="text-xs font-bold text-slate-300 select-none">Còi</span>
             <BaseSwitch :model-value="store.buzzerStatus === 1" @update:model-value="handleSwitch" />
         </div>
         <div class="fixed inset-0 bg-linear-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
