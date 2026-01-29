@@ -1,6 +1,5 @@
 <template>
     <div class="w-full">
-        
         <div class="flex md:hidden bg-slate-800 p-1 rounded-xl mb-4 border border-slate-700">
             <button 
                 @click="activeTab = 'chart'"
@@ -32,7 +31,7 @@
             >
                 <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-sm">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-slate-200 font-bold text-lg">Diễn biến nhiệt độ & Độ ẩm</h3>
+                        <h3 class="text-slate-200 font-bold text-lg">Diễn biến Nhiệt & Ẩm</h3>
                         <div class="flex gap-4 text-xs">
                             <div class="flex items-center gap-1">
                                 <span class="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -57,18 +56,18 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-sm">
                         <div class="text-slate-500 text-xs uppercase font-bold">TB Hôm nay</div>
-                        <div class="text-2xl font-bold text-blue-400 mt-1">{{ stats.todayAvgTemp }}°C</div>
+                        <div class="text-2xl font-bold text-blue-400 mt-1">{{ stats.avgTemp }}°C</div>
                     </div>
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-sm">
                         <div class="text-slate-500 text-xs uppercase font-bold">Độ ẩm TB</div>
-                        <div class="text-2xl font-bold text-emerald-400 mt-1">{{ stats.todayAvgHum }}%</div>
+                        <div class="text-2xl font-bold text-emerald-400 mt-1">{{ stats.avgHum }}%</div>
                     </div>
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-sm">
-                        <div class="text-slate-500 text-xs uppercase font-bold">Max (Tháng)</div>
+                        <div class="text-slate-500 text-xs uppercase font-bold">Max (Tuần)</div>
                         <div class="text-2xl font-bold text-red-400 mt-1">{{ stats.maxTemp }}°C</div>
                     </div>
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-sm">
-                        <div class="text-slate-500 text-xs uppercase font-bold">Min (Tháng)</div>
+                        <div class="text-slate-500 text-xs uppercase font-bold">Min (Tuần)</div>
                         <div class="text-2xl font-bold text-cyan-400 mt-1">{{ stats.minTemp }}°C</div>
                     </div>
                 </div>
@@ -91,8 +90,8 @@
                             <tbody class="divide-y divide-slate-700 text-slate-300">
                                 <tr v-for="(row, index) in paginatedData" :key="index" class="hover:bg-slate-700/50 transition-colors">
                                     <td class="p-3">
-                                        <div class="font-bold text-white">{{ row.hour }}:00</div>
-                                        <div class="text-xs text-slate-500">Ngày {{ row.day }}</div>
+                                        <div class="font-bold text-white">{{ formatTime(row.timestamp) }}</div>
+                                        <div class="text-xs text-slate-500">{{ formatDate(row.timestamp) }}</div>
                                     </td>
                                     <td class="p-3 text-right font-mono text-blue-400">{{ row.temp }}°</td>
                                     <td class="p-3 text-right font-mono text-emerald-400">{{ row.hum }}%</td>
@@ -136,11 +135,18 @@ import { Line } from 'vue-chartjs';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const props = defineProps<{ data: any }>();
+// Props nhận từ Parent (EnvironmentView.vue)
+const props = defineProps<{ 
+    data: { 
+        temperature: { x: number, y: number }[], 
+        humidity: { x: number, y: number }[],
+        lastUpdate?: string 
+    } 
+}>();
 
 // --- TAB & RESPONSIVE LOGIC ---
 const activeTab = ref<'chart' | 'data'>('chart');
-const isDesktop = ref(window.innerWidth >= 1280); // Breakpoint XL của Tailwind
+const isDesktop = ref(window.innerWidth >= 1280);
 
 const handleResize = () => {
     isDesktop.value = window.innerWidth >= 1280;
@@ -148,78 +154,83 @@ const handleResize = () => {
 onMounted(() => window.addEventListener('resize', handleResize));
 onUnmounted(() => window.removeEventListener('resize', handleResize));
 
-// --- XỬ LÝ DỮ LIỆU ---
+// --- XỬ LÝ DỮ LIỆU (QUAN TRỌNG: MAPPING BLYNK DATA) ---
 interface DataRow {
-    day: number; hour: number; temp: number; hum: number; timestamp: number;
+    timestamp: number;
+    temp: number;
+    hum: number;
 }
 
-const flatData = computed<DataRow[]>(() => {
-    if (!props.data) return [];
-    let rows: DataRow[] = [];
-    Object.keys(props.data).forEach(dayKey => {
-        const dayData = props.data[dayKey];
-        const day = parseInt(dayKey);
-        if (dayData && typeof dayData === 'object') {
-            Object.keys(dayData).forEach(hourKey => {
-                const record = dayData[hourKey];
-                const hour = parseInt(hourKey);
-                if (record) {
-                    rows.push({
-                        day: day + 1,
-                        hour: hour,
-                        temp: record.temperature || 0,
-                        hum: record.humidity || 0,
-                        timestamp: day * 24 + hour
-                    });
-                }
-            });
-        }
+// Hàm gộp 2 mảng Nhiệt độ và Độ ẩm thành 1 danh sách duy nhất
+// Blynk trả về 2 mảng riêng lẻ, cần gộp lại dựa trên timestamp gần nhau
+const mergedData = computed<DataRow[]>(() => {
+    if (!props.data?.temperature || !props.data?.humidity) return [];
+
+    const tempData = props.data.temperature;
+    const humData = props.data.humidity;
+    
+    // Map dữ liệu nhiệt độ trước
+    const rows = tempData.map(tItem => {
+        // Tìm bản ghi độ ẩm có thời gian gần nhất (trong vòng 5 phút)
+        const hItem = humData.find(h => Math.abs(h.x - tItem.x) < 300000); 
+        return {
+            timestamp: tItem.x,
+            temp: tItem.y,
+            hum: hItem ? hItem.y : 0 // Nếu không tìm thấy thì tạm để 0
+        };
     });
+
     return rows.sort((a, b) => a.timestamp - b.timestamp);
 });
 
 // --- THỐNG KÊ ---
 const stats = computed(() => {
-    const list = flatData.value;
-    if (list.length === 0) return { todayAvgTemp: 0, todayAvgHum: 0, maxTemp: 0, minTemp: 0 };
-    const maxDay = Math.max(...list.map(r => r.day));
-    const todayRecords = list.filter(r => r.day === maxDay);
+    const list = mergedData.value;
+    if (list.length === 0) return { avgTemp: 0, avgHum: 0, maxTemp: 0, minTemp: 0 };
+
+    const temps = list.map(r => r.temp);
+    const hums = list.map(r => r.hum).filter(h => h > 0); // Lọc bỏ giá trị 0 ảo
 
     return {
-        todayAvgTemp: todayRecords.length ? (todayRecords.reduce((sum, r) => sum + r.temp, 0) / todayRecords.length).toFixed(1) : 0,
-        todayAvgHum: todayRecords.length ? (todayRecords.reduce((sum, r) => sum + r.hum, 0) / todayRecords.length).toFixed(0) : 0,
-        maxTemp: Math.max(...list.map(r => r.temp)),
-        minTemp: Math.min(...list.map(r => r.temp))
+        avgTemp: (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1),
+        avgHum: hums.length ? (hums.reduce((a, b) => a + b, 0) / hums.length).toFixed(0) : 0,
+        maxTemp: Math.max(...temps),
+        minTemp: Math.min(...temps)
     };
 });
 
-// --- CẤU HÌNH CHART (Sạch sẽ, không màu mè) ---
+// --- CẤU HÌNH CHART ---
 const chartData = computed(() => {
-    const displayData = flatData.value.slice(-24); // 24 giờ gần nhất
+    // Chỉ lấy khoảng 50 điểm dữ liệu gần nhất để vẽ cho đỡ rối
+    // Hoặc lấy mẫu (sampling) nếu dữ liệu quá dày
+    const rawData = mergedData.value;
+    const samplingRate = Math.ceil(rawData.length / 50); 
+    const displayData = rawData.filter((_, index) => index % samplingRate === 0);
+
     return {
-        labels: displayData.map(r => `${r.hour}h`),
+        labels: displayData.map(r => formatTime(r.timestamp)), // Nhãn trục X là giờ:phút
         datasets: [
             {
                 label: 'Nhiệt độ',
                 data: displayData.map(r => r.temp),
-                borderColor: '#3b82f6', // Xanh dương đậm rõ nét
-                backgroundColor: 'transparent', // Không fill gradient
+                borderColor: '#3b82f6',
+                backgroundColor: 'transparent',
                 borderWidth: 2,
-                tension: 0.3, // Cong nhẹ tự nhiên
-                pointRadius: 3,
-                pointBackgroundColor: '#1e293b', // Màu nền Slate-900
+                tension: 0.4,
+                pointRadius: 2,
+                pointBackgroundColor: '#1e293b',
                 pointBorderColor: '#3b82f6',
                 yAxisID: 'y'
             },
             {
                 label: 'Độ ẩm',
                 data: displayData.map(r => r.hum),
-                borderColor: '#10b981', // Xanh lá đậm
+                borderColor: '#10b981',
                 backgroundColor: 'transparent',
                 borderWidth: 2,
-                borderDash: [4, 4], // Nét đứt để phân biệt
-                tension: 0.3,
-                pointRadius: 0, // Ẩn điểm độ ẩm cho đỡ rối
+                borderDash: [4, 4],
+                tension: 0.4,
+                pointRadius: 0,
                 yAxisID: 'y1'
             }
         ]
@@ -230,7 +241,7 @@ const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { display: false }, // Đã có chú thích tùy chỉnh ở trên
+        legend: { display: false },
         tooltip: {
             mode: 'index' as const,
             intersect: false,
@@ -245,13 +256,13 @@ const chartOptions = {
     scales: {
         x: {
             grid: { display: false },
-            ticks: { color: '#64748b', font: { size: 11 } }
+            ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }
         },
         y: {
             type: 'linear' as const,
             display: true,
             position: 'left' as const,
-            grid: { color: '#334155', tickLength: 0 }, // Grid mờ tối giản
+            grid: { color: '#334155', tickLength: 0 },
             ticks: { color: '#94a3b8' }
         },
         y1: {
@@ -259,19 +270,28 @@ const chartOptions = {
             display: true,
             position: 'right' as const,
             grid: { display: false },
-            ticks: { display: false }, // Ẩn số trục phải cho đỡ rối
+            ticks: { display: false },
             min: 0, max: 100
         }
     }
 };
 
-// --- PHÂN TRANG ---
+// --- PHÂN TRANG BẢNG ---
 const currentPage = ref(1);
-const pageSize = 8; // Desktop hiện được nhiều dòng hơn
-const tableSource = computed(() => [...flatData.value].reverse());
+const pageSize = 8;
+const tableSource = computed(() => [...mergedData.value].reverse()); // Đảo ngược để hiện mới nhất lên đầu
 const totalPages = computed(() => Math.ceil(tableSource.value.length / pageSize));
 const paginatedData = computed(() => {
     const start = (currentPage.value - 1) * pageSize;
     return tableSource.value.slice(start, start + pageSize);
 });
+
+// --- UTILS FORMAT ---
+const formatTime = (ts: number) => {
+    return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+};
+const formatDate = (ts: number) => {
+    return new Date(ts).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+};
+
 </script>

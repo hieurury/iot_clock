@@ -1,37 +1,61 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue';
 import TimeUpAlert from '../components/TimeUpAlert.vue';
 import BaseSwitch from '../components/BaseSwitch.vue';
 import { useCountdownStore } from '../stores/countdown';
 import { useRoute } from 'vue-router';
 import { CloudIcon, ClockIcon, BellAlertIcon } from '@heroicons/vue/24/outline';
+import { toggleBuzzer, getBuzzerState } from '../services/api';
 
-// Dùng route để check active class cho menu
 const route = useRoute();
 const store = useCountdownStore();
 
-// Hàm kiểm tra active để code gọn hơn
+const isBuzzerOn = ref(false);
+const isLoadingBuzzer = ref(false);
+
 const isActive = (path: string) => route.path === path;
 
-import { setBuzzerStatus } from '../services/api';
 const handleSwitch = async (val: boolean) => {
-    if (val && store.buzzerStatus !== 1) {
-        // Bật còi thủ công
-        await setBuzzerStatus(1);
-        store.buzzerStatus = 1;
-    } else if (!val && store.buzzerStatus === 1) {
-        await store.turnOffBuzzer();
+    if (isLoadingBuzzer.value) return;
+    isLoadingBuzzer.value = true;
+    try {
+        const success = await toggleBuzzer(val);
+        if (success) {
+            isBuzzerOn.value = val;
+            store.buzzerStatus = val ? 1 : 0;
+            if (!val) store.isFinished = false; 
+        } else {
+            isBuzzerOn.value = !val;
+        }
+    } catch (e) {
+        isBuzzerOn.value = !val;
+    } finally {
+        isLoadingBuzzer.value = false;
     }
 };
+
+onMounted(async () => {
+    try {
+        const state = await getBuzzerState();
+        isBuzzerOn.value = state;
+        store.buzzerStatus = state ? 1 : 0;
+    } catch (e) { console.error(e); }
+});
 </script>
+
 <template>
     <div class="min-h-screen font-sans text-slate-200 relative overflow-hidden">
         <TimeUpAlert />
-        <!-- Nút tắt còi dạng switch nổi góc trên phải -->
-        <div class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl shadow-lg border border-slate-700">
-            <span class="text-xs font-bold text-slate-300 select-none">Còi</span>
-            <BaseSwitch :model-value="store.buzzerStatus === 1" @update:model-value="handleSwitch" />
+        
+        <div class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl shadow-lg border border-slate-700 backdrop-blur-md transition-all hover:bg-slate-800/90">
+            <span class="text-xs font-bold text-slate-300 select-none uppercase tracking-wider">Còi</span>
+            <div v-if="isLoadingBuzzer" class="w-8 h-4 flex items-center justify-center">
+                <div class="w-3 h-3 border-2 border-slate-500 border-t-cyan-400 rounded-full animate-spin"></div>
+            </div>
+            <BaseSwitch v-else :model-value="isBuzzerOn" @update:model-value="handleSwitch" />
         </div>
-        <div class="fixed inset-0 bg-linear-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
+
+        <div class="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
         <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
             <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
             <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-600/20 rounded-full blur-[100px]"></div>
@@ -60,6 +84,7 @@ const handleSwitch = async (val: boolean) => {
                 </div>
                 <span class="text-[10px] font-bold mt-1">Môi trường</span>
             </router-link>
+
             <router-link 
                 to="/alarm" 
                 class="flex flex-col items-center justify-center w-full h-full transition-all duration-300 relative group"
@@ -93,7 +118,7 @@ const handleSwitch = async (val: boolean) => {
 </template>
 
 <style scoped>
-/* Chỉ giữ lại animation, không dùng @apply nữa */
+/* Chỉ giữ lại CSS Transition, các class Tailwind đã đưa lên HTML */
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.2s ease, transform 0.2s ease;

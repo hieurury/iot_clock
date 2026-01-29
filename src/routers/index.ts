@@ -7,6 +7,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 import HomeView from '../views/HomeView.vue'
 import CountdownView from '../views/CountdownView.vue'
 import AlarmView from '../views/AlarmView.vue'
+import Test from '../views/Test.vue'
 
 const routes = [
     {
@@ -27,6 +28,11 @@ const routes = [
                 path: 'alarm', // Đường dẫn '/alarm' sẽ load AlarmView
                 name: 'alarm',
                 component: AlarmView,
+            },
+            {
+                path: 'test', // Đường dẫn '/test' sẽ load Test
+                name: 'test',
+                component: Test,
             }
         ]
     }

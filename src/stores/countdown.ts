@@ -1,137 +1,110 @@
 import { defineStore } from 'pinia';
 import { 
-    getCountdown, setCountdown, resetCountdown, 
-    getBuzzerStatus, setBuzzerStatus, 
-    setState // Đảm bảo api.ts của bạn đã có hàm này
+    addCountdown, 
+    cancelCountdown, 
+    toggleBuzzer, 
+    getBuzzerState 
 } from '../services/api';
 
 export const useCountdownStore = defineStore('countdown', {
     state: () => ({
-        status: false,
-        target: 0,
-        time: 0,
+        isRunning: false,
+        targetTime: 0,
+        remainingSeconds: 0,
         buzzerStatus: 0,
-        isTimeUp: false,
-        intervalId: null as any,
-        buzzerCheckId: null as any,
+        isFinished: false,
+        timerId: null as any,
+        syncBuzzerId: null as any,
     }),
+
     actions: {
-        // 1. BẮT ĐẦU ĐẾM -> CHUYỂN MÀN HÌNH SANG SỐ 2
-        async startNewCountdown(durationSeconds: number) {
-            const nowSeconds = Math.floor(Date.now() / 1000);
-            const targetTime = nowSeconds + durationSeconds;
+        // [SỬA LẠI HÀM NÀY] Nhận vào seconds (giây) thay vì minutes
+        async startCountdown(seconds: number) {
             
-            this.status = true;
-            this.target = targetTime;
-            this.time = durationSeconds;
-            this.isTimeUp = false;
+            // --- SAI (CŨ): Dòng này gây lỗi 5s thành 5 phút ---
+            // const durationSecs = seconds * 60; 
+
+            // --- ĐÚNG (MỚI): Giữ nguyên số giây nhận được ---
+            const durationSecs = seconds; 
             
+            const now = Math.floor(Date.now() / 1000);
+            
+            this.targetTime = now + durationSecs;
+            this.remainingSeconds = durationSecs;
+            this.isRunning = true;
+            this.isFinished = false;
+            this.buzzerStatus = 0;
+
             this.startLocalTicker();
 
+            // Gửi lệnh lên Blynk
             try {
-                // Gửi lệnh song song: Set thời gian đếm + Chuyển màn hình LED (State 2)
-                await Promise.all([
-                    setCountdown({ target: targetTime, status: true }),
-                    setState(2) 
-                ]);
-            } catch (e) { console.error(e); }
+                // Gửi thẳng số giây lên V3 (Hardware cũng phải sửa để nhận giây)
+                await addCountdown(seconds); 
+                console.log(`Đã gửi lệnh đếm ngược ${seconds} giây`);
+            } catch (e) {
+                console.error("Lỗi gửi lệnh Blynk:", e);
+            }
+        },
+
+        async stopCountdown() {
+            this.clearAllTimers();
+            this.isRunning = false;
+            this.isFinished = false;
+            this.remainingSeconds = 0;
+            this.buzzerStatus = 0;
+
+            try {
+                await Promise.all([toggleBuzzer(false), cancelCountdown()]);
+            } catch (e) {}
         },
 
         startLocalTicker() {
-            if (this.intervalId) clearInterval(this.intervalId);
-            const tick = () => {
+            if (this.timerId) clearInterval(this.timerId);
+            this.timerId = setInterval(() => {
                 const now = Math.floor(Date.now() / 1000);
-                const remaining = this.target - now;
-                if (remaining > 0) {
-                    this.time = remaining;
+                const left = this.targetTime - now;
+
+                if (left > 0) {
+                    this.remainingSeconds = left;
                 } else {
-                    // Hết giờ
-                    this.time = 0;
-                    this.status = false;
-                    this.isTimeUp = true;
-                    this.buzzerStatus = 1;
-                    if (this.intervalId) clearInterval(this.intervalId);
-                    
-                    // Chờ 3s để mạch đồng bộ xong mới bắt đầu check còi
-                    setTimeout(() => { if (this.isTimeUp) this.startBuzzerMonitor(); }, 3000);
+                    this.remainingSeconds = 0;
+                    this.isRunning = false;
+                    this.finishCountdown();
                 }
-            };
-            tick();
-            this.intervalId = setInterval(tick, 1000);
+            }, 1000);
         },
 
-        startBuzzerMonitor() {
-            if (this.buzzerCheckId) clearInterval(this.buzzerCheckId);
-            this.buzzerCheckId = setInterval(async () => {
+        finishCountdown() {
+            if (this.timerId) clearInterval(this.timerId);
+            this.isFinished = true;
+            this.buzzerStatus = 1; 
+            this.startSyncBuzzer();
+        },
+
+        startSyncBuzzer() {
+            if (this.syncBuzzerId) clearInterval(this.syncBuzzerId);
+            this.syncBuzzerId = setInterval(async () => {
                 try {
-                    const status = await getBuzzerStatus();
-                    // Nếu Web đang kêu mà Server đã tắt (do bấm nút cứng) -> Tắt Web
-                    if (this.isTimeUp && status === 0) {
-                        this.turnOffBuzzer();
+                    const isOn = await getBuzzerState();
+                    if (!isOn && this.isFinished) {
+                        this.stopCountdown(); 
                     } else {
-                        this.buzzerStatus = status;
+                        this.buzzerStatus = isOn ? 1 : 0;
                     }
                 } catch (e) {}
-            }, 1500); 
+            }, 2000); 
         },
 
-        // 2. TẮT CÒI / HỦY -> CHUYỂN MÀN HÌNH VỀ SỐ 1
         async turnOffBuzzer() {
-            if (this.buzzerCheckId) {
-                clearInterval(this.buzzerCheckId);
-                this.buzzerCheckId = null;
-            }
-            this.buzzerStatus = 0;
-            this.isTimeUp = false;
-            this.status = false;
-
-            try {
-                // Gửi lệnh: Tắt còi + Reset đếm + Về màn hình chính (State 1)
-                await Promise.all([
-                    setBuzzerStatus(0),
-                    resetCountdown(),
-                    setState(1)
-                ]);
-            } catch (e) { console.error(e); }
-            
-            if (this.intervalId) clearInterval(this.intervalId);
+            await this.stopCountdown();
         },
 
-        async reset() {
-            this.resetLocalState();
-            // Reset bình thường cũng đưa về màn hình chính
-            try {
-                await Promise.all([
-                    resetCountdown(),
-                    setState(1)
-                ]);
-            } catch (e) { console.error(e); }
-        },
-
-        resetLocalState() {
-            if (this.intervalId) clearInterval(this.intervalId);
-            if (this.buzzerCheckId) clearInterval(this.buzzerCheckId);
-            this.status = false;
-            this.time = 0;
-            this.target = 0;
-            this.isTimeUp = false;
-            this.buzzerStatus = 0;
-        },
-        
-        async fetchCountdown() {
-             try {
-                const data = await getCountdown();
-                if (data && data.status) {
-                    const now = Math.floor(Date.now() / 1000);
-                    if (data.target > now) {
-                        this.target = data.target;
-                        this.status = true;
-                        this.startLocalTicker();
-                    } else {
-                        this.resetLocalState();
-                    }
-                }
-            } catch (e) { console.error(e); }
+        clearAllTimers() {
+            if (this.timerId) clearInterval(this.timerId);
+            if (this.syncBuzzerId) clearInterval(this.syncBuzzerId);
+            this.timerId = null;
+            this.syncBuzzerId = null;
         }
     }
 });
