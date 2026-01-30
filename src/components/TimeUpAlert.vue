@@ -1,6 +1,6 @@
 <template>
     <Transition name="fade">
-        <div v-if="store.isTimeUp" class="z-100 relative">
+        <div v-if="store.isFinished" class="z-100 relative">
             
             <div v-if="isCountdownPage" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-sm" @click="handleStopAndClose"></div>
@@ -81,21 +81,15 @@ const router = useRouter();
 const isCountdownPage = computed(() => route.path === '/countdown');
 
 const handleStopAndClose = async () => {
-    store.resetLocalState();
-    
-    // Logic tắt còi trong store đã bao gồm:
-    // 1. setBuzzerStatus(0)
-    // 2. resetCountdown()
-    // 3. setState(1) -> Chuyển màn hình về số 1
+    store.clearAllTimers();
     await store.turnOffBuzzer();
-
     if (!isCountdownPage.value) {
         router.push('/countdown');
     }
 };
 
 onBeforeUnmount(() => {
-    if (store.isTimeUp || store.buzzerStatus === 1) {
+    if (store.isFinished || store.buzzerStatus === 1) {
         store.turnOffBuzzer();
     }
 });
