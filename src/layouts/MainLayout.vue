@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue'; // [CẬP NHẬT] Thêm onUnmounted
 import TimeUpAlert from '../components/TimeUpAlert.vue';
 import BaseSwitch from '../components/BaseSwitch.vue';
 import { useCountdownStore } from '../stores/countdown';
@@ -12,8 +12,26 @@ const store = useCountdownStore();
 
 const isBuzzerOn = ref(false);
 const isLoadingBuzzer = ref(false);
+let buzzerSyncInterval: any = null; // [MỚI] Biến giữ Timer
 
 const isActive = (path: string) => route.path === path;
+
+// Hàm đồng bộ trạng thái từ Server về Web
+const syncBuzzerState = async () => {
+    // Nếu đang bấm nút (loading) thì không đồng bộ đè lên để tránh giật lag
+    if (isLoadingBuzzer.value) return; 
+
+    try {
+        const state = await getBuzzerState();
+        // Chỉ cập nhật nếu trạng thái khác nhau (để tránh render lại không cần thiết)
+        if (isBuzzerOn.value !== state) {
+            isBuzzerOn.value = state;
+            store.buzzerStatus = state ? 1 : 0;
+        }
+    } catch (e) { 
+        console.error("Lỗi đồng bộ còi:", e); 
+    }
+};
 
 const handleSwitch = async (val: boolean) => {
     if (isLoadingBuzzer.value) return;
@@ -25,6 +43,7 @@ const handleSwitch = async (val: boolean) => {
             store.buzzerStatus = val ? 1 : 0;
             if (!val) store.isFinished = false; 
         } else {
+            // Nếu lỗi thì trả lại trạng thái cũ
             isBuzzerOn.value = !val;
         }
     } catch (e) {
@@ -34,12 +53,18 @@ const handleSwitch = async (val: boolean) => {
     }
 };
 
-onMounted(async () => {
-    try {
-        const state = await getBuzzerState();
-        isBuzzerOn.value = state;
-        store.buzzerStatus = state ? 1 : 0;
-    } catch (e) { console.error(e); }
+onMounted(() => {
+    // 1. Lấy trạng thái ngay khi vào
+    syncBuzzerState();
+
+    // 2. [QUAN TRỌNG] Thiết lập kiểm tra định kỳ mỗi 3 giây
+    // Giúp Switch tự tắt nếu ESP32 tắt còi (do cảm biến hoặc hết giờ)
+    buzzerSyncInterval = setInterval(syncBuzzerState, 3000);
+});
+
+onUnmounted(() => {
+    // Xóa timer khi thoát để tránh rò rỉ bộ nhớ
+    if (buzzerSyncInterval) clearInterval(buzzerSyncInterval);
 });
 </script>
 
@@ -118,7 +143,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Chỉ giữ lại CSS Transition, các class Tailwind đã đưa lên HTML */
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.2s ease, transform 0.2s ease;
