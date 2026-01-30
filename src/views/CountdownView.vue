@@ -69,14 +69,6 @@
             </div>
         </div>
 
-        <CustomAlert 
-            v-model:visible="showTimeUpAlert"
-            title="Đã hết giờ!"
-            message="Thời gian đếm ngược đã kết thúc. Còi báo động đang kêu."
-            type="info"
-            @confirm="handleTimeUpConfirm"
-        />
-
     </div>
 </template>
 
@@ -84,7 +76,6 @@
 import { ref, computed, watch } from 'vue'; // [NEW] Thêm watch
 import { useCountdownStore } from '../stores/countdown';
 import SelectTime from '../components/SelectTime.vue';
-import CustomAlert from '../components/CustomAlert.vue'; // [NEW] Import Alert
 import { PlayIcon, ClockIcon } from '@heroicons/vue/24/outline';
 
 const store = useCountdownStore();
@@ -98,11 +89,6 @@ watch(() => store.isFinished, (isFinished) => {
     }
 });
 
-// --- XỬ LÝ KHI BẤM NÚT TRÊN ALERT ---
-function handleTimeUpConfirm() {
-    store.stopCountdown(); // Gọi hàm dừng còi và reset trạng thái
-    showTimeUpAlert.value = false;
-}
 
 // 1. Format thời gian (Giữ nguyên)
 const formattedCountdown = computed(() => {

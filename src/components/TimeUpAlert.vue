@@ -14,7 +14,7 @@
                     <div v-if="store.buzzerStatus === 1" class="mb-6 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
                         <p class="text-red-400 font-bold animate-pulse flex items-center justify-center gap-2">
                             <span class="w-2 h-2 bg-red-500 rounded-full"></span>
-                            CÒI ĐANG KÊU
+                            HẾT THỜI GIAN
                         </p>
                     </div>
 
@@ -22,12 +22,7 @@
                         <button v-if="store.buzzerStatus === 1" 
                             @click="handleStopAndClose"
                             class="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-red-900/30 transition-all active:scale-95">
-                            Tắt còi & Đặt lại
-                        </button>
-                        <button 
-                            @click="handleStopAndClose"
-                            class="w-full py-3.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-medium transition-colors">
-                            Đóng (Tắt còi)
+                            Tắt còi
                         </button>
                     </div>
                 </div>
@@ -46,7 +41,7 @@
                     </div>
 
                     <div v-if="store.buzzerStatus === 1" class="text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
-                        Còi đang kêu
+                        Hết giờ
                     </div>
 
                     <div class="flex gap-2 mt-1">
@@ -54,11 +49,6 @@
                             @click="handleStopAndClose"
                             class="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-md shadow transition-colors">
                             Tắt còi
-                        </button>
-                        <button 
-                            @click="handleStopAndClose"
-                            class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-md transition-colors">
-                            Đóng
                         </button>
                     </div>
                 </div>
