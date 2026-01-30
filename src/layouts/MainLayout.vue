@@ -55,7 +55,7 @@ onMounted(async () => {
             <BaseSwitch v-else :model-value="isBuzzerOn" @update:model-value="handleSwitch" />
         </div>
 
-        <div class="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
+        <div class="fixed inset-0 bg-linear-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>
         <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
             <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
             <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-600/20 rounded-full blur-[100px]"></div>

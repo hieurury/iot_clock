@@ -1,6 +1,6 @@
 <template>
     <Transition name="fade">
-        <div v-if="visible" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div v-if="visible" class="fixed inset-0 z-60 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" @click="handleBackdropClick"></div>
             
             <div class="relative w-full max-w-xs bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl p-6 flex flex-col items-center text-center animate-scale-in">

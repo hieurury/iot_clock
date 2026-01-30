@@ -264,7 +264,7 @@ const glassCard = "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3x
                 </button>
             </div>
 
-            <div v-if="activeTab === 'chart'" :class="glassCard" class="min-h-[400px] flex flex-col animate-fade-in relative">
+            <div v-if="activeTab === 'chart'" :class="glassCard" class="min-h-100 flex flex-col animate-fade-in relative">
                 <div class="flex justify-between items-start mb-4">
                     <h3 class="text-white font-bold flex items-center gap-2">
                         <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
@@ -285,7 +285,7 @@ const glassCard = "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3x
                 </div>
             </div>
 
-            <div v-else :class="glassCard" class="overflow-hidden !p-0 animate-fade-in">
+            <div v-else :class="glassCard" class="overflow-hidden p-0! animate-fade-in">
                 <div class="px-6 py-4 border-b border-white/10">
                     <h3 class="text-white font-bold">Thống kê Tuần qua</h3>
                 </div>
@@ -311,7 +311,7 @@ const glassCard = "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3x
             <div v-if="showDetailModal" class="fixed inset-0 z-999 flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" @click="showDetailModal = false"></div>
                 
-                <div class="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl h-[600px] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+                <div class="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl h-150 flex flex-col shadow-2xl overflow-hidden animate-fade-in">
                     <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
                         <div>
                             <h2 class="text-xl font-bold text-white">Xu hướng 7 ngày qua</h2>
