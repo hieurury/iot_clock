@@ -28,7 +28,7 @@ export const useAlarmStore = defineStore('alarm', {
                     this.alarms = [];
                 }
             } catch (e) {
-                console.error("Lỗi parse JSON báo thức:", e);
+                // error hidden for security
                 this.alarms = [];
             } finally {
                 this.loading = false;
@@ -43,7 +43,7 @@ export const useAlarmStore = defineStore('alarm', {
                 await addAlarm(jsonString); // Gửi lên V4
                 return true;
             } catch (e) {
-                console.error("Lỗi gửi báo thức:", e);
+                // error hidden for security
                 return false;
             }
         },

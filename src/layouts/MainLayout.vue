@@ -2,11 +2,14 @@
 import { onMounted, onUnmounted, ref } from 'vue'; // [CẬP NHẬT] Thêm onUnmounted
 import TimeUpAlert from '../components/TimeUpAlert.vue';
 import BaseSwitch from '../components/BaseSwitch.vue';
+import { getAuth, signOut } from 'firebase/auth';
+import { useRouter } from 'vue-router';
 import { useCountdownStore } from '../stores/countdown';
 import { useRoute } from 'vue-router';
 import { CloudIcon, ClockIcon, BellAlertIcon } from '@heroicons/vue/24/outline';
 import { toggleBuzzer, getBuzzerState } from '../services/api';
 
+const router = useRouter();
 const route = useRoute();
 const store = useCountdownStore();
 
@@ -53,6 +56,11 @@ const handleSwitch = async (val: boolean) => {
     }
 };
 
+const handleLogout = async () => {
+    await signOut(getAuth());
+    router.push('/login');
+};
+
 onMounted(() => {
     // 1. Lấy trạng thái ngay khi vào
     syncBuzzerState();
@@ -78,6 +86,9 @@ onUnmounted(() => {
                 <div class="w-3 h-3 border-2 border-slate-500 border-t-cyan-400 rounded-full animate-spin"></div>
             </div>
             <BaseSwitch v-else :model-value="isBuzzerOn" @update:model-value="handleSwitch" />
+            <Button 
+            class="ml-4 px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-900/30 transition-all active:scale-95"
+            @click="handleLogout">Đăng xuất</Button>
         </div>
 
         <div class="fixed inset-0 bg-linear-to-br from-slate-900 via-[#1e1b4b] to-slate-900 -z-20"></div>

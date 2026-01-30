@@ -41,9 +41,9 @@ export const useCountdownStore = defineStore('countdown', {
             try {
                 // Gửi thẳng số giây lên V3 (Hardware cũng phải sửa để nhận giây)
                 await addCountdown(seconds); 
-                console.log(`Đã gửi lệnh đếm ngược ${seconds} giây`);
+                // log hidden for security
             } catch (e) {
-                console.error("Lỗi gửi lệnh Blynk:", e);
+                // error hidden for security
             }
         },
 

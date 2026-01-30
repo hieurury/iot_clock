@@ -233,7 +233,7 @@ const glassCard = "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3x
                 <div :class="glassCard" class="relative group overflow-hidden">
                     <div class="absolute -right-4 -top-4 w-20 h-20 bg-orange-500/20 rounded-full blur-xl group-hover:bg-orange-500/30 transition-all"></div>
                     <div class="relative z-10">
-                        <p class="text-slate-400 text-xs font-bold uppercase mb-1">Nhiệt độ</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase mb-1">Nhiệt độ hiện tại</p>
                         <div class="flex items-end gap-1">
                             <span class="text-4xl font-black text-white">{{ temp ?? '--' }}</span>
                             <span class="text-lg text-orange-400 mb-1">°C</span>
@@ -245,7 +245,7 @@ const glassCard = "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3x
                 <div :class="glassCard" class="relative group overflow-hidden">
                     <div class="absolute -right-4 -top-4 w-20 h-20 bg-cyan-500/20 rounded-full blur-xl group-hover:bg-cyan-500/30 transition-all"></div>
                     <div class="relative z-10">
-                        <p class="text-slate-400 text-xs font-bold uppercase mb-1">Độ ẩm</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase mb-1">Độ ẩm hiện tại</p>
                         <div class="flex items-end gap-1">
                             <span class="text-4xl font-black text-white">{{ humi ?? '--' }}</span>
                             <span class="text-lg text-cyan-400 mb-1">%</span>

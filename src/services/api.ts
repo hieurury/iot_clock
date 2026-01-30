@@ -34,7 +34,7 @@ export async function getCurrentWeather() {
             hum: await resHum.json()
         };
     } catch (error) {
-        console.error("Lỗi lấy dữ liệu hiện tại:", error);
+        // error hidden for security
         return { temp: 0, hum: 0 };
     }
 }
@@ -63,7 +63,7 @@ export async function getEnvironmentData() {
             lastUpdate: new Date().toLocaleString('vi-VN')
         };
     } catch (error) {
-        console.error("Lỗi tải lịch sử:", error);
+        // error hidden for security
         return null;
     }
 }
@@ -93,7 +93,7 @@ export async function toggleBuzzer(state: boolean) {
         await blynkRequest("update", { V0: val });
         return true;
     } catch (error) {
-        console.error("Lỗi toggle còi:", error);
+        // error hidden for security
         return false;
     }
 }
@@ -126,7 +126,7 @@ export async function addAlarm(timeStr: string) {
         await blynkRequest("update", { V4: timeStr });
         return true;
     } catch (error) {
-        console.error("Lỗi đặt báo thức:", error);
+        // error hidden for security
         return false;
     }
 }
@@ -142,7 +142,7 @@ export async function addCountdown(minutes: number) {
         await blynkRequest("update", { V3: minutes });
         return true;
     } catch (error) {
-        console.error("Lỗi đặt hẹn giờ:", error);
+        // error hidden for security
         return false;
     }
 }
@@ -156,7 +156,7 @@ export async function cancelCountdown() {
         await blynkRequest("update", { V3: 0 });
         return true;
     } catch (error) {
-        console.error("Lỗi hủy hẹn giờ:", error);
+        // error hidden for security
         return false;
     }
 }
